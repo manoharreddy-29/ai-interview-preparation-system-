@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI-Based Student Answer Evaluation System</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Ambient background glow elements -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+  <div class="ambient-glow glow-3"></div>
+
+  <!-- App Wrapper -->
+  <div class="app-container">
+
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-content">
+        <div class="brand">
+          <div class="brand-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+              <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+            </svg>
+          </div>
+          <div>
+            <h1 class="brand-title">AI-Based Student Answer Evaluation System</h1>
+            <p class="brand-subtitle">Powered by Google Gemini AI & MySQL Database</p>
+          </div>
+        </div>
+
+        <div class="header-badges">
+          <!-- Gemini AI Model status -->
+          <div class="status-chip ai-chip" id="aiModelBadge" title="Google Gemini AI Engine">
+            <span class="status-dot green"></span>
+            <span id="aiModelText">✨ Gemini 3.5 Flash</span>
+          </div>
+
+          <!-- Database status -->
+          <div class="status-chip db-chip" id="dbStatusBadge" title="Database Connection Status">
+            <span class="status-dot green" id="dbDot"></span>
+            <span id="dbStatusText">Checking DB...</span>
+          </div>
+
+          <!-- User session pill (visible when logged in) -->
+          <div class="user-session-chip hidden" id="userSessionChip">
+            <span class="user-avatar" id="userAvatarIcon">👨‍🎓</span>
+            <div class="user-meta">
+              <span class="user-name" id="sessionUserName">Alex Morgan</span>
+              <span class="user-role-badge" id="sessionUserRole">Student</span>
+            </div>
+            <button class="btn-logout" id="logoutBtn" title="Logout or Switch Account">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Notification Toast -->
+    <div id="toastNotification" class="toast-notification hidden"></div>
+
+    <!-- ================================================================= -->
+    <!-- SECTION 1: AUTHENTICATION (STUDENT / FACULTY LOGIN & REGISTER)     -->
+    <!-- ================================================================= -->
+    <section id="authSection" class="auth-section">
+      <div class="auth-container card">
+        <div class="auth-header">
+          <div class="auth-role-tabs">
+            <button class="role-tab-btn active" id="tabRoleStudent" data-role="student">
+              <span class="role-icon">👨‍🎓</span> Student Portal
+            </button>
+            <button class="role-tab-btn" id="tabRoleFaculty" data-role="faculty">
+              <span class="role-icon">👨‍🏫</span> Faculty Portal
+            </button>
+          </div>
+          <div class="auth-mode-switch">
+            <button class="mode-switch-btn active" id="authModeLoginBtn">Sign In</button>
+            <button class="mode-switch-btn" id="authModeRegisterBtn">Create Account</button>
+          </div>
+        </div>
+
+        <!-- AUTH FORMS -->
+        <div class="auth-body">
+          <div class="auth-intro">
+            <h2 id="authTitle">Student Login</h2>
+            <p id="authSubtitle">Enter your credentials to access your assessments, scores, and Gemini AI evaluations.</p>
+          </div>
+
+          <!-- Login Form -->
+          <form id="loginForm" class="auth-form">
+            <div class="form-group">
+              <label for="loginEmail" class="form-label">Email Address</label>
+              <input type="email" id="loginEmail" class="custom-input" placeholder="e.g. student@demo.com" required>
+            </div>
+            <div class="form-group">
+              <label for="loginPassword" class="form-label">Password</label>
+              <input type="password" id="loginPassword" class="custom-input" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block" id="loginSubmitBtn">
+              <span class="btn-text">Sign In</span>
+            </button>
+          </form>
+
+          <!-- Register Form -->
+          <form id="registerForm" class="auth-form hidden">
+            <div class="form-group">
+              <label for="regName" class="form-label">Full Name</label>
+              <input type="text" id="regName" class="custom-input" placeholder="e.g. Alex Morgan" required>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="regEmail" class="form-label">Email Address</label>
+                <input type="email" id="regEmail" class="custom-input" placeholder="e.g. alex@university.edu" required>
+              </div>
+              <div class="form-group">
+                <label for="regPassword" class="form-label">Password</label>
+                <input type="password" id="regPassword" class="custom-input" placeholder="At least 6 characters" required>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="regIdentifier" class="form-label" id="lblIdentifier">Student Roll No.</label>
+                <input type="text" id="regIdentifier" class="custom-input" placeholder="e.g. CS2026-042" required>
+              </div>
+              <div class="form-group">
+                <label for="regDepartment" class="form-label">Department / Branch</label>
+                <input type="text" id="regDepartment" class="custom-input" placeholder="e.g. Computer Science" value="Computer Science">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-success btn-block" id="regSubmitBtn">
+              <span class="btn-text">Create Account</span>
+            </button>
+          </form>
+
+          <!-- 1-Click Fast Demo Login Buttons -->
+          <div class="demo-login-box">
+            <span class="demo-label">Quick 1-Click Test Access:</span>
+            <div class="demo-buttons">
+              <button type="button" class="btn btn-ghost btn-sm" id="demoStudentBtn">
+                ⚡ Login as Demo Student (Alex Morgan)
+              </button>
+              <button type="button" class="btn btn-ghost btn-sm" id="demoFacultyBtn">
+                ⚡ Login as Demo Faculty (Dr. Evelyn Reed)
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- SECTION 2: STUDENT PORTAL VIEW                                    -->
+    <!-- ================================================================= -->
+    <section id="studentPortalSection" class="portal-section hidden">
+      <!-- Portal Navigation Subheader -->
+      <nav class="portal-nav">
+        <button class="portal-nav-tab active" data-tab="student-assessments">
+          <span>📝</span> Answer Assessment & AI Evaluation
+        </button>
+        <button class="portal-nav-tab" data-tab="student-profile">
+          <span>👤</span> Student Profile
+        </button>
+        <button class="portal-nav-tab" data-tab="student-history">
+          <span>📜</span> My Evaluation History & Scores
+        </button>
+      </nav>
+
+      <!-- TAB 1: STUDENT ASSESSMENTS & EVALUATION -->
+      <div id="tabStudentAssessments" class="portal-tab-content active">
+        <main class="main-grid">
+          <!-- LEFT COLUMN: Question & Answer Workspace -->
+          <section class="card input-section">
+            <div class="section-title">
+              <div class="step-num">1</div>
+              <h2>Select Assessment Question</h2>
+            </div>
+
+            <div class="form-group">
+              <label for="questionSelect" class="form-label">Available Questions</label>
+              <div class="select-wrapper">
+                <select id="questionSelect" class="custom-select">
+                  <option value="" disabled selected>Loading questions...</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Active Question Detail Card -->
+            <div class="question-preview-card" id="questionDetailsCard">
+              <div class="q-header-meta">
+                <span class="badge badge-subject" id="qSubjectBadge">Computer Science</span>
+                <span class="badge badge-diff" id="qDifficultyBadge">Medium</span>
+                <span class="badge badge-marks" id="qMaxMarksBadge">Max Marks: 10</span>
+              </div>
+              <h3 class="q-title" id="qTitleDisplay">Loading question prompt...</h3>
+              <p class="q-text" id="qTextDisplay">Please select a question from the dropdown above.</p>
+
+              <!-- Reference Answer Accordion -->
+              <div class="reference-accordion">
+                <button type="button" class="btn-accordion" id="toggleRefAnswerBtn">
+                  <span>👁️ Preview Official Model Reference Answer</span>
+                  <span class="accordion-arrow">▼</span>
+                </button>
+                <div class="accordion-content hidden" id="refAnswerContainer">
+                  <div class="ref-answer-box" id="refAnswerText"></div>
+                  <div class="ref-keywords-box">
+                    <strong>Expected Key Concepts:</strong>
+                    <div class="tags-container" id="expectedKeywordsTags"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Student Answer Submission Area -->
+            <div class="section-title mt-4">
+              <div class="step-num">2</div>
+              <h2>Your Answer</h2>
+            </div>
+
+            <div class="form-group">
+              <div class="textarea-header">
+                <label for="studentAnswerInput" class="form-label">Type or Paste Your Answer</label>
+                <div class="text-stats">
+                  <span id="wordCountBadge">0 words</span>
+                  <span class="separator">•</span>
+                  <span id="charCountBadge">0 chars</span>
+                </div>
+              </div>
+              <textarea
+                id="studentAnswerInput"
+                class="custom-textarea"
+                rows="7"
+                placeholder="Explain the concepts clearly, incorporating technical terms, mechanisms, and examples..."
+              ></textarea>
+            </div>
+
+            <div class="action-buttons-row">
+              <button type="button" class="btn btn-secondary btn-sm" id="loadSampleAnswerBtn">
+                💡 Load Sample Answer
+              </button>
+              <button type="button" class="btn btn-ghost btn-sm" id="clearAnswerBtn">
+                🗑️ Clear
+              </button>
+              <button type="button" class="btn btn-primary" id="evaluateBtn">
+                <span class="btn-spinner hidden" id="evalSpinner"></span>
+                <span class="btn-text" id="evalBtnText">🚀 Evaluate Answer with Gemini AI</span>
+              </button>
+            </div>
+          </section>
+
+          <!-- RIGHT COLUMN: Evaluation Results -->
+          <section class="card output-section">
+            <div class="section-title">
+              <div class="step-num">3</div>
+              <h2>Evaluation Results & Feedback</h2>
+            </div>
+
+            <!-- Empty State Placeholder -->
+            <div class="empty-state" id="resultsEmptyState">
+              <div class="empty-icon">🎯</div>
+              <h3>No Evaluation Yet</h3>
+              <p>Select a question, type your answer, and click <strong>Evaluate Answer with Gemini AI</strong> to get marks, detailed remarks, strengths, and pedagogical suggestions.</p>
+            </div>
+
+            <!-- Active Evaluation Result View -->
+            <div class="results-wrapper hidden" id="resultsContent">
+              <!-- Score Overview Banner -->
+              <div class="score-banner" id="scoreBanner">
+                <div class="score-main">
+                  <div class="score-number-box">
+                    <span class="score-obtained" id="resMarksObtained">0</span>
+                    <span class="score-max" id="resMaxMarks">/ 10</span>
+                  </div>
+                  <div class="score-percentage-pill" id="resScorePct">0%</div>
+                </div>
+                <div class="score-badge-col">
+                  <span class="rating-badge" id="resRatingBadge">Outstanding</span>
+                  <span class="engine-badge" id="resEngineBadge">✨ Gemini AI</span>
+                </div>
+              </div>
+
+              <!-- Examiner Remarks Card -->
+              <div class="feedback-card remarks-card">
+                <div class="card-header-icon">
+                  <span>👨‍🏫</span>
+                  <h4>Examiner Remarks</h4>
+                </div>
+                <p class="remarks-text" id="resRemarksText">Evaluation completed.</p>
+              </div>
+
+              <!-- Strengths & Technical Improvements -->
+              <div class="feedback-columns-grid">
+                <!-- Strengths -->
+                <div class="feedback-card strengths-card">
+                  <div class="card-header-icon">
+                    <span class="icon-success">✓</span>
+                    <h4>Identified Strengths</h4>
+                  </div>
+                  <ul class="feedback-list" id="resStrengthsList"></ul>
+                </div>
+
+                <!-- Improvements -->
+                <div class="feedback-card improvements-card">
+                  <div class="card-header-icon">
+                    <span class="icon-warning">⚠️</span>
+                    <h4>Areas for Technical Improvement</h4>
+                  </div>
+                  <ul class="feedback-list" id="resImprovementsList"></ul>
+                </div>
+              </div>
+
+              <!-- Actionable Learning Suggestions -->
+              <div class="feedback-card suggestions-card">
+                <div class="card-header-icon">
+                  <span>💡</span>
+                  <h4>Pedagogical Suggestions & Study Guidance</h4>
+                </div>
+                <ul class="feedback-list" id="resSuggestionsList"></ul>
+              </div>
+
+              <!-- Keywords / Key Concepts Diagnostic -->
+              <div class="feedback-card keywords-card">
+                <h4>Key Concepts Diagnostic</h4>
+                <div class="keywords-diagnostic-grid">
+                  <div>
+                    <span class="sub-label">Matched Concepts:</span>
+                    <div class="tags-container" id="resMatchedKeywords"></div>
+                  </div>
+                  <div>
+                    <span class="sub-label">Missing / Omitted Concepts:</span>
+                    <div class="tags-container" id="resMissingKeywords"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
+
+      <!-- TAB 2: STUDENT PROFILE -->
+      <div id="tabStudentProfile" class="portal-tab-content">
+        <div class="profile-layout">
+          <!-- Profile Info Card -->
+          <div class="card profile-card">
+            <div class="profile-header">
+              <div class="profile-avatar-large">👨‍🎓</div>
+              <div class="profile-title-info">
+                <h2 id="profStudentName">Alex Morgan</h2>
+                <span class="role-pill">Student</span>
+                <p class="profile-email" id="profStudentEmail">student@demo.com</p>
+              </div>
+            </div>
+
+            <div class="profile-details-grid">
+              <div class="detail-item">
+                <span class="detail-label">Roll Number</span>
+                <span class="detail-value" id="profStudentRoll">CS2026-042</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Department</span>
+                <span class="detail-value" id="profStudentDept">Computer Science & Engineering</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Account Created</span>
+                <span class="detail-value" id="profStudentJoined">Active</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Evaluation Engine</span>
+                <span class="detail-value">Google Gemini AI</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Academic Performance Summary -->
+          <div class="card stats-card">
+            <h3 class="card-subtitle">Academic Performance Summary</h3>
+            <div class="stats-metric-grid">
+              <div class="metric-box">
+                <span class="metric-number" id="statSubmissionsCount">0</span>
+                <span class="metric-label">Assessments Completed</span>
+              </div>
+              <div class="metric-box">
+                <span class="metric-number" id="statAverageScore">0%</span>
+                <span class="metric-label">Average Score</span>
+              </div>
+              <div class="metric-box">
+                <span class="metric-number" id="statHighestScore">0%</span>
+                <span class="metric-label">Highest Score</span>
+              </div>
+              <div class="metric-box">
+                <span class="metric-number highlight-grade" id="statOverallGrade">N/A</span>
+                <span class="metric-label">Performance Grade</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: STUDENT EVALUATION HISTORY -->
+      <div id="tabStudentHistory" class="portal-tab-content">
+        <div class="card history-card">
+          <div class="card-header-row">
+            <div>
+              <h2>My Assessment History & Scores</h2>
+              <p class="text-muted">Review all your previous evaluations, scores, and examiner remarks.</p>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="refreshStudentHistoryBtn">
+              🔄 Refresh History
+            </button>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table" id="studentHistoryTable">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Question Title</th>
+                  <th>Marks</th>
+                  <th>Score %</th>
+                  <th>Rating</th>
+                  <th>Engine</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="studentHistoryTableBody">
+                <tr>
+                  <td colspan="7" class="text-center text-muted">No evaluations submitted yet. Attempt an assessment to see your history!</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- SECTION 3: FACULTY PORTAL VIEW                                    -->
+    <!-- ================================================================= -->
+    <section id="facultyPortalSection" class="portal-section hidden">
+      <!-- Portal Navigation Subheader -->
+      <nav class="portal-nav">
+        <button class="portal-nav-tab active" data-tab="faculty-submissions">
+          <span>📊</span> Student Scores & Submissions
+        </button>
+        <button class="portal-nav-tab" data-tab="faculty-questions">
+          <span>➕</span> Question Management
+        </button>
+        <button class="portal-nav-tab" data-tab="faculty-profile">
+          <span>👤</span> Faculty Profile & Analytics
+        </button>
+      </nav>
+
+      <!-- TAB 1: FACULTY VIEW STUDENT SCORES & SUBMISSIONS -->
+      <div id="tabFacultySubmissions" class="portal-tab-content active">
+        <div class="card">
+          <div class="card-header-row">
+            <div>
+              <h2>Student Submissions & Score Diagnostics</h2>
+              <p class="text-muted">Live student evaluations, marks, examiner remarks, and AI diagnostics stored in MySQL.</p>
+            </div>
+            <div class="header-actions">
+              <button class="btn btn-ghost btn-sm" id="exportCsvBtn">
+                📥 Export CSV Report
+              </button>
+              <button class="btn btn-secondary btn-sm" id="refreshSubmissionsBtn">
+                🔄 Refresh
+              </button>
+            </div>
+          </div>
+
+          <!-- Filter & Search Bar -->
+          <div class="search-filter-bar">
+            <div class="search-input-wrapper">
+              <input type="text" id="submissionsSearchInput" class="custom-input" placeholder="🔍 Search by student name, roll number, or question...">
+            </div>
+          </div>
+
+          <!-- Submissions Table -->
+          <div class="table-container">
+            <table class="data-table" id="facultySubmissionsTable">
+              <thead>
+                <tr>
+                  <th>Student Name</th>
+                  <th>Roll No.</th>
+                  <th>Department</th>
+                  <th>Question</th>
+                  <th>Marks</th>
+                  <th>Score %</th>
+                  <th>Rating</th>
+                  <th>Submitted At</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="facultySubmissionsTableBody">
+                <tr>
+                  <td colspan="9" class="text-center text-muted">Loading student submissions...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: FACULTY QUESTION MANAGEMENT -->
+      <div id="tabFacultyQuestions" class="portal-tab-content">
+        <div class="faculty-questions-grid">
+          <!-- CREATE QUESTION FORM -->
+          <div class="card create-question-card">
+            <h2>➕ Add New Assessment Question</h2>
+            <p class="text-muted">Create a question with official model answer and expected key concepts for Gemini evaluation.</p>
+
+            <form id="createQuestionForm" class="mt-3">
+              <div class="form-group">
+                <label for="newQTitle" class="form-label">Question Title</label>
+                <input type="text" id="newQTitle" class="custom-input" placeholder="e.g. Asynchronous JavaScript & Promises" required>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="newQSubject" class="form-label">Subject / Course</label>
+                  <input type="text" id="newQSubject" class="custom-input" placeholder="e.g. Web Technologies" required>
+                </div>
+                <div class="form-group">
+                  <label for="newQMaxMarks" class="form-label">Maximum Marks</label>
+                  <input type="number" id="newQMaxMarks" class="custom-input" value="10" min="1" max="100" required>
+                </div>
+                <div class="form-group">
+                  <label for="newQDifficulty" class="form-label">Difficulty</label>
+                  <select id="newQDifficulty" class="custom-select">
+                    <option value="Easy">Easy</option>
+                    <option value="Medium" selected>Medium</option>
+                    <option value="Hard">Hard</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="newQPrompt" class="form-label">Question Prompt / Statement</label>
+                <textarea id="newQPrompt" class="custom-textarea" rows="3" placeholder="State the question clearly..." required></textarea>
+              </div>
+
+              <div class="form-group">
+                <label for="newQReference" class="form-label">Official Model / Reference Answer</label>
+                <textarea id="newQReference" class="custom-textarea" rows="4" placeholder="Enter the complete, ideal reference answer against which students will be evaluated..." required></textarea>
+              </div>
+
+              <div class="form-group">
+                <label for="newQKeywords" class="form-label">Expected Key Concepts & Keywords (comma-separated)</label>
+                <input type="text" id="newQKeywords" class="custom-input" placeholder="e.g. event loop, promises, async/await, microtask queue">
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-block" id="publishQuestionBtn">
+                Publish Question to Students
+              </button>
+            </form>
+          </div>
+
+          <!-- QUESTION BANK LIST -->
+          <div class="card question-bank-card">
+            <h2>📚 Active Question Bank</h2>
+            <p class="text-muted">Questions currently available for student assessments.</p>
+            <div class="questions-list-container" id="facultyQuestionsList">
+              <div class="text-muted">Loading questions...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: FACULTY PROFILE & ANALYTICS -->
+      <div id="tabFacultyProfile" class="portal-tab-content">
+        <div class="profile-layout">
+          <!-- Faculty Profile Card -->
+          <div class="card profile-card">
+            <div class="profile-header">
+              <div class="profile-avatar-large">👨‍🏫</div>
+              <div class="profile-title-info">
+                <h2 id="profFacultyName">Dr. Evelyn Reed</h2>
+                <span class="role-pill faculty-pill">Faculty Examiner</span>
+                <p class="profile-email" id="profFacultyEmail">faculty@demo.com</p>
+              </div>
+            </div>
+
+            <div class="profile-details-grid">
+              <div class="detail-item">
+                <span class="detail-label">Faculty ID</span>
+                <span class="detail-value" id="profFacultyId">FAC-8812</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Department</span>
+                <span class="detail-value" id="profFacultyDept">Computer Science & Engineering</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Evaluation System</span>
+                <span class="detail-value">Gemini 3.5 Flash + MySQL</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Project ID</span>
+                <span class="detail-value">projects/781869000408</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Class Analytics Metrics -->
+          <div class="card stats-card">
+            <h3 class="card-subtitle">Aggregate Class Analytics</h3>
+            <div class="stats-metric-grid">
+              <div class="metric-box">
+                <span class="metric-number" id="facStatQuestionsCount">0</span>
+                <span class="metric-label">Questions Published</span>
+              </div>
+              <div class="metric-box">
+                <span class="metric-number" id="facStatSubmissionsCount">0</span>
+                <span class="metric-label">Evaluations Recorded</span>
+              </div>
+              <div class="metric-box">
+                <span class="metric-number" id="facStatStudentsCount">0</span>
+                <span class="metric-label">Students Participating</span>
+              </div>
+              <div class="metric-box">
+                <span class="metric-number highlight-grade" id="facStatClassAverage">0%</span>
+                <span class="metric-label">Class Average Score</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div><!-- /app-container -->
+
+  <!-- ================================================================= -->
+  <!-- MODAL: DETAILED EVALUATION REPORT INSPECTOR                        -->
+  <!-- ================================================================= -->
+  <div class="modal-overlay hidden" id="reportModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modalReportTitle">Detailed Evaluation Report</h3>
+        <button class="btn-close-modal" id="closeReportModalBtn">&times;</button>
+      </div>
+      <div class="modal-body" id="modalReportBody">
+        <!-- Injected via JavaScript -->
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
